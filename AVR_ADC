@@ -1,0 +1,45 @@
+/*
+ * ADC.c
+ *1.ADMUX选择参考源
+ *2.选择采集通道
+ * Created: 2015/11/9 14:48:18
+ * Author : Administrator
+ */ 
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+#define LED_ON PORTB |= (1<<PORTB5)
+#define LED_OFF PORTB &= ~(1<<PORTB5)
+#define LED_Toggle PINB |= (1<<PINB5)
+
+ISR(ADC_vect)
+{
+	LED_Toggle;
+}
+
+void  ADC_Init(void)
+{
+	// 1.选择参考源	2.选择采集通道
+	ADMUX |= (1<<REFS0); 
+	
+	//1.使能ADC转换	 2.ADC开始转换 3.ADC上升沿自动触发 4.ADC中断使能 5.分频选择
+	ADCSRA |= (1<< ADEN) | (1<<ADSC) | (1<<ADATE) | (1<<ADIE) | (1<<ADPS2) | (1<<ADPS1) ;
+	
+	//开启全局中断
+	sei();		
+}
+
+
+int main(void)
+{
+	
+	ADC_Init();
+	
+    /* Replace with your application code */
+    while (1) 
+    {
+		
+    }
+}
+

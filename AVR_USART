@@ -1,0 +1,72 @@
+/*
+ * AVR_USART.c
+ *
+ * Created: 2015/10/28 16:08:22
+ *  Author: niv
+ */ 
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+#include "USART_irq.h"
+
+#define FOSC 16000000 // Clock Speed
+#define BAUD 9600
+#define MYUBRR FOSC/16/BAUD-1
+
+char String[]= "Hello world!";
+
+
+/* Main - a simple test program*/
+void main( void )
+{
+	USART0_Init( MYUBRR );   /* Calculate baud rate*/
+	sei();           /* Enable interrupts => enable UART interrupts */
+
+	for( ; ; )        /* Forever */
+	{
+		//USART0_Transmit( USART0_Receive() ); /* Echo the received character */
+		USART_putstring(String);
+		_delay_ms(500);
+	}
+}
+
+
+//void USART_Init( unsigned int ubrr)
+//{
+	///*Set baud rate */
+	//UBRR0H = (unsigned char)(ubrr>>8);
+	//UBRR0L = (unsigned char)ubrr;
+	///*Enable receiver and transmitter */
+	//UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+	///* Set frame format: 8data, 2stop bit 帧格式*/
+	//UCSR0C = (1<<USBS0)|(3<<UCSZ00);
+//}
+//
+//void USART_Transmit( unsigned char data )
+//{
+	///* Wait for empty transmit buffer */
+	//while ( !( UCSR0A & (1<<UDRE0)) );
+	///* Put data into buffer, sends the data */
+	//UDR0 = data;
+//}
+//
+//unsigned char USART_Receive( void )
+//{
+	///* Wait for data to be received */
+	//while ( !(UCSR0A & (1<<RXC0)) );
+	///* Get and return received data from buffer */
+	//return UDR0;
+//}
+//
+//int main(void)
+//{
+	//USART_Init(MYUBRR);
+	//
+    //while(1)
+    //{
+        ////TODO:: Please write your application code 
+		//USART_Transmit(USART_Receive());
+    //}
+//}

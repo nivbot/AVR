@@ -1,0 +1,60 @@
+/* 
+ * GPIO.c
+ * 1.点亮LED灯 ： 1.设置端口方向，2.设置端口为高电平
+ * 2.闪烁LED灯 ： 1.设置晶振频率，2.翻转端口，3.延时
+ * 3.通过查询法用按键控制LED灯亮灭
+ * 4.使用中断法用控键控制LED灯亮灭
+ * 5.低功耗设置，当控制器空闲时POWER OFF
+ * Created: 2015/10/27 11:05:13
+ * Author : niv
+ */ 
+#define F_CPU 16000000UL  //设置晶振频率为16MHZ
+#include <avr/io.h>
+#include <util/delay.h>
+#include <avr/sleep.h>
+
+#define led_on  PORTB |= (1<<PORTB5) 
+#define led_off PORTB &= ~(1<<PORTB5)
+#define led_toggle PINB |= (1<<PINB5)
+#define SWITCH_PRESSED  !(PINB & (1<<PINB7))
+
+ISR(PCINT0_vect)//INTERRUPT 
+{
+	if (SWITCH_PRESSED) //if PIN7 is low
+	{
+		led_on;
+	} 
+	else
+	{
+		led_off;
+	}
+}
+
+int main(void)
+{
+	DDRB |= (1<<DDB5);	//设置端口方向为输出
+	DDRB &= ~(1<<DDB7);
+	
+	PRR = 0xFF;
+	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+	
+	PCMSK0 |= (1<<PCINT7);//set portB7 pin change interrupt enable				
+	PCICR  |= (1<<PCIE0); //set portB interrupt enable
+	
+    /* Replace with your application code */
+    while (1) 
+    {
+		//PORTB |= (1<<PORTB5);//1.2设置端口为高电平
+		//PINB |= (1<<PINB5);//2.2翻转B5
+		//_delay_ms()//2.3延时 来自delay.h
+	/*	if (SWITCH_PRESSED) //if PIN7 is low
+		{
+			led_on;
+		} 
+		else
+		{
+			led_off;
+		}*/
+		sleep_mode();
+    }
+}

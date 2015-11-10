@@ -1,0 +1,139 @@
+/*
+ * AVR_TC.c
+ * 1.使用8位定时器overflow使LED亮灭：1.设置分频器系数,2.使能定时器中断，使能全局中断，3.定时器中断子程序
+ * 2.使用16位定时器的CTC使LED亮灭:1.设置分频器系数，2.设置OCR输出比较寄存器，3.使能定时器1，4.能使全局中断
+ * Created: 2015/10/28 13:15:27
+ *  Author: niv
+ */ 
+
+#define F_CPU 16000000UL  //设置晶振频率为16MHZ
+#include <avr/io.h>
+#include <util/delay.h>
+#include <avr/interrupt.h>
+
+#define led_on  PORTB |= (1<<PORTB5) 
+#define led_off PORTB &= ~(1<<PORTB5)
+#define led_toggle PINB |= (1<<PINB5)
+#define SWITCH_PRESSED  !(PINB & (1<<PINB7))
+
+enum {UP,DOWM};
+	
+void PWM_Increase_duty(void);
+void PWM_Decrease_duty(void);
+void PWM_BrightDim(void);
+void Timer_Frequency(uint8_t freq);
+void PWM_Init();
+void millis_timer(uint8_t millis);
+
+ISR(TIMER1_COMPA_vect)//TIMER0_OVF_vect
+{
+	led_on;
+}
+
+ISR(TIMER1_COMPB_vect)
+{
+	led_off;
+}
+
+ISR(TIMER0_COMPA_vect)
+{
+	PWM_BrightDim();
+}
+
+void PWM_Increase_duty(void)
+{
+	uint16_t period = OCR1A;
+	uint16_t duty = OCR1B;
+	
+	if (duty < period)
+	{
+		duty++;
+	} 
+	else
+	{
+		duty = 0;
+	}
+	OCR1B = duty;
+}
+
+void PWM_Decrease_duty(void)
+{
+	uint16_t period = OCR1A;
+	uint16_t duty = OCR1B;
+	
+	if (duty > 0)
+	{
+		duty--;
+	} 
+	else
+	{
+		duty = period;
+	}
+	OCR1B = duty;
+}
+
+void PWM_BrightDim(void) //UP AND DOWM
+{
+	uint16_t period = OCR1A;
+	uint16_t Duty = OCR1B;
+	static uint8_t direction;
+	
+	switch (direction)
+	{
+		case UP:
+		if (++Duty == (period-1))
+		direction = DOWM;
+		break;
+		case DOWM:
+		if (--Duty == 2)
+		direction = UP;
+		break;
+	}
+	OCR1B = Duty;
+}
+
+void Timer_Frequency(uint8_t freq)
+{
+	TCCR1B |= (1<<CS10)|(1<<WGM12); //分频256，模式CTC
+	TIMSK1 |= (1<<OCIE1A); //enable timer interrupt
+	//F_CPU/frequency*2*N - 1
+	OCR1A = (F_CPU/(freq*2*256) -1);
+}
+
+void PWM_Init()
+{ 
+	TCCR1A |= (1<<COM1A1)|(1<<WGM11)|(1<<WGM10);	//Clear OC1A on Compare Match, set OC1A at BOTTOM;Fast PWM, 10-bit
+	TCCR1B |= (1<<CS10)|(1<<WGM12);		//无分频，模式CTC
+	TIMSK1 |= (1<<OCIE1A);		//enable timer interrupt
+	//F_CPU/frequency*2*N - 1
+	//OCR1A = (F_CPU/(freq*2*256) -1);
+	OCR1A = 800;
+	OCR1B = 400;
+}
+
+void millis_timer(uint8_t millis)
+{
+	TCCR0A |= (1<<WGM01); //TIMER0 CTC模式
+	TCCR0B |= (1<<CS02)|(1<<CS00);//Fclk/1024
+	//frequency is 1000HZ ->1ms so OCR = millis*F_CPU/2*N -1 ;N=1024 	
+	OCR0A = millis*78125-1; //set the top
+	TIMSK0 |= (1<<OCIE0A);//enable output compare 
+}
+
+int main(void)
+{
+	DDRB |= (1<<DDB5) |(1<<DDB2);	//设置端口方向为输出
+	DDRB &= ~(1<<DDB7); //
+	
+	//TCCR1B |= (1<<CS12);   //分频256
+	//TIMSK1 |= (1<<OCIE1A); //enable timer interrupt
+	//Timer_Frequency(4);    
+	PWM_Init();
+	
+	sei();
+	
+    /* Replace with your application code */
+    while (1) 
+    {
+    }
+}
